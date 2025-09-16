@@ -3,7 +3,7 @@ import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import http from 'http'
-import { v4 as uuid } from 'uuid'
+
 // @ts-ignore
 import StompServer from 'stomp-broker-js'
 
@@ -49,51 +49,7 @@ function seedTickets() {
     publish('/topic/tickets.new', { ticket: t })
   }
 }
-
-app.post('/api/tickets', (req, res) => {
-  const now = new Date().toISOString()
-  const id = req.body?.id || `T-${Math.floor(Math.random() * 900 + 100)}`
-  const t: Ticket = {
-    id,
-    title: req.body?.title || 'New ticket',
-    status: req.body?.status || 'OPEN',
-    priority: req.body?.priority || 'LOW',
-    assignee: req.body?.assignee ?? null,
-    tags: req.body?.tags ?? [],
-    createdAt: now,
-    updatedAt: now,
-    description: req.body?.description ?? ''
-  }
-  tickets.set(id, t)
-  publish('/topic/tickets.new', { ticket: t })
-  res.json({ ok: true, ticket: t })
-})
-
-app.post('/api/tickets/:id', (req, res) => {
-  const id = req.params.id
-  const prev = tickets.get(id)
-  const changes = req.body?.changes || {}
-  if (!prev) return res.status(404).json({ error: 'Not found' })
-  const updated: Ticket = { ...prev, ...changes, updatedAt: new Date().toISOString() }
-  tickets.set(id, updated)
-  publish('/topic/tickets.updated', { id, changes })
-  res.json({ ok: true, ticket: updated })
-})
-
-app.post('/api/tickets/:id/messages', (req, res) => {
-  const id = req.params.id
-  if (!tickets.has(id)) return res.status(404).json({ error: 'Not found' })
-  const payload = {
-    ticketId: id,
-    sender: req.body?.sender || 'User',
-    body: req.body?.body || '',
-    attachments: req.body?.attachments || []
-  }
-  publish(`/topic/tickets.${id}.messages.new`, payload)
-  res.json({ ok: true })
-})
-
-app.get('/health', (_req, res) => res.json({ ok: true }))
+// TO DO Authentication, DB, etc
 
 // random demo events
 setInterval(() => {
